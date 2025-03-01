@@ -1,0 +1,174 @@
+<div class="container">
+
+    <!-- buttons -->
+    <div id="button-area">
+        <div id="left">
+            <button mat-flat-button class="my-btn" (click)="setupBot()">Setup AI</button>
+            <div style="width: 10px;"></div>
+            <button mat-flat-button class="my-btn" (click)="setupDb()">Setup Database</button>
+        </div>
+        <div id="right">
+            <button mat-flat-button class="my-btn" (click)="setupQuery()">Your Query</button>
+            <div style="width: 10px;"></div>
+            <button mat-flat-button class="my-btn" (click)="executeQuery()">Execute Query</button>
+        </div>
+    </div>
+
+    <!-- content -->
+     <div style="display: flex; flex-direction: row;">
+        <fieldset style="min-width: 300px;">
+            <legend>Database Schema</legend>
+            <div class="content" *ngIf="!data">NOTHING YET</div>
+            <div class="content" *ngIf="data" style="max-height: 300px; overflow-x: hidden; overflow-y: auto;">
+                <ol>
+                    <ng-container *ngFor="let tbl of data?.schemaStructured">
+                        <li style="font-weight: bold; color: dodgerblue; font-size: .9em;">{{tbl.tableName}}</li>
+                        <ul>
+                            <ng-container *ngFor="let col of tbl.columns">
+                                <li style="font-style: italic; font-size: .8em;">{{col}}</li>
+                            </ng-container>
+                        </ul>
+                    </ng-container>
+                </ol>
+            </div>
+         </fieldset>
+         <fieldset style="margin-left: 20px;">
+            <legend>Generated Query / Summary</legend>
+            <div class="content" *ngIf="!query || query.length < 1">NOTHING YET</div>
+            <div class="content" *ngIf="query && query.length > 0">
+                <p><b style="color: dodgerblue;">Plain query:</b><br />{{userQuery}}</p>
+                <p><b style="color: dodgerblue;">AI decision making:<br /></b>{{summary}}</p>
+                <p><b style="color: dodgerblue;">AI generated query:<br /></b>{{query}}</p>
+            </div>
+         </fieldset>
+         <!-- <fieldset  style="margin-left: 20px; min-width: 300px;">
+            <legend>Chat History</legend>
+            <div class="content"></div>
+         </fieldset> -->
+     </div>
+     <fieldset>
+        <legend>Generated Data</legend>
+        <div class="content" *ngIf="!queryResult">NOTHING YET</div>
+        <div class="content" *ngIf="queryResult">
+            <table [cellPadding]="0" [cellSpacing]="0" style="margin-top: 10px;">
+                <thead>
+                    <tr style="background-color: rgb(46, 46, 46);">
+                        <th *ngFor="let col of queryResult!.rawData[0]" style="padding: 10px;">{{col}}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let row of rows">
+                        @for (r of row; track r) {
+                        <td style="font-size: .8em; padding-right: 10px; padding-left: 10px;">{{r}}</td>
+                        }
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+     </fieldset>
+
+    <!-- loading -->
+    <div class="example-loading-shade" *ngIf="isLoadingResults">
+        <mat-card>
+            <mat-card-content>
+                <div>Bitte warten ...</div>
+                <div style="margin-top: 20px;">
+                    <mat-spinner diameter="50" strokeWidth="6" style="margin: 0 auto;"></mat-spinner>
+                </div>
+            </mat-card-content>
+        </mat-card>
+    </div>
+
+    <!-- ai -->
+    <div class="example-loading-shade" *ngIf="isAiActive">
+        <mat-card>
+            <mat-card-content>
+                <div>
+                    <b class="dialog-header">Open AI Params</b>
+                    <div>
+                        <hr class="dialog-line-upper" />
+                    </div>
+                </div>
+                <div style="display: flex; flex-direction: column; justify-content: center; width: 400px;">
+                    <input id="txt-endpoint" matInput type="text" placeholder="open ai endpoint" [(ngModel)]="openAiEndpoint"/>
+                    <div style="height: 10px;"></div>
+                    <input id="txt-key" matInput type="password" placeholder="open ai password" [(ngModel)]="openAiKey"/>
+                    <div style="height: 10px;"></div>
+                    <input id="txt-model" matInput type="text" placeholder="open ai model" [(ngModel)]="openAiModel"/>
+                </div>
+                <div>
+                    <hr class="dialog-line-lower" />
+                </div>
+            </mat-card-content>
+            <mat-card-footer>
+                <div class="dialog-buttons">
+                    <button mat-flat-button color="primary" class="my-btn" (click)="onAiCancel()">Cancel</button>
+                    <div style="width: 10px;"></div>
+                    <button mat-flat-button color="primary" class="my-btn" (click)="onAiOk()">Save</button>
+                </div>
+            </mat-card-footer>
+        </mat-card>
+    </div>
+
+    <!-- schema -->
+    <div class="example-loading-shade" *ngIf="isSchemaActive">
+        <mat-card>
+            <mat-card-content>
+                <div>
+                    <b class="dialog-header">Database Connection</b>
+                    <div>
+                        <hr class="dialog-line-upper" />
+                    </div>
+                </div>
+                <div style="display: flex; flex-direction: column;">
+                    <select matNativeControl id="dd-db-id" [(ngModel)]="connectionDatabaseType">
+                        <option value="MSSQL">MsSql</option>
+                        <option value="MYSQL">MySql</option>
+                        <option value="POSTGRESSQL">PostgresSql</option>
+                        <option value="ORACLE">Oracle (not yet implemented)</option>
+                    </select>
+                    <div style="height: 10px;"></div>
+                    <textarea id="txt-conn-string" matInput type="text" placeholder="connection string" rows="3" [(ngModel)]="connectionString"></textarea>
+                </div>
+                <div>
+                    <hr class="dialog-line-lower" />
+                </div>
+            </mat-card-content>
+            <mat-card-footer>
+                <div class="dialog-buttons">
+                    <button mat-flat-button color="primary" class="my-btn" (click)="onDbCancel()">Cancel</button>
+                    <div style="width: 10px;"></div>
+                    <button mat-flat-button color="primary" class="my-btn" (click)="onDbOk()">Save</button>
+                </div>
+            </mat-card-footer>
+        </mat-card>
+    </div>
+
+    <!-- query -->
+    <div class="example-loading-shade" *ngIf="isQueryActive">
+        <mat-card>
+            <mat-card-content>
+                <div>
+                    <b class="dialog-header">Your Query</b>
+                    <div>
+                        <hr class="dialog-line-upper" />
+                    </div>
+                </div>
+                <div>
+                    <textarea id="txt-query" matInput type="text" placeholder="db query in plain english" rows="8" [(ngModel)]="userQuery"></textarea>
+                </div>
+                <div>
+                    <hr class="dialog-line-lower" />
+                </div>
+            </mat-card-content>
+            <mat-card-footer>
+                <div class="dialog-buttons">
+                    <button mat-flat-button color="primary" class="my-btn" (click)="onQueryCancel()">Cancel</button>
+                    <div style="width: 10px;"></div>
+                    <button mat-flat-button color="primary" class="my-btn" (click)="onQueryOk()">Save</button>
+                </div>
+            </mat-card-footer>
+        </mat-card>
+    </div>
+
+</div>
