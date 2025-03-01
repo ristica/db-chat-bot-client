@@ -1,0 +1,29 @@
+name: Build
+
+on:
+  push:
+    branches: 
+      - master
+
+jobs:
+  merge-job:
+    runs-on: ubuntu-latest
+
+    steps:
+       - name: Checkout
+         uses: actions/checkout@v4
+
+       - name: Setup Node.js environment
+         uses: actions/setup-node@v4
+
+       - name: Install dependencies
+         run: npm install --force
+
+       - name: Build angular app
+         run: npm run build --configuration=production
+
+      #  - name: Upload a Build Artifact
+      #    uses: actions/upload-artifact@v4
+      #    with:
+      #      name: app-artifacts
+      #      path: dist
